@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>实时用户列表</title>
+</head>
+<body>
+    <h1>当前在线用户：</h1>
+    <ul id="userList"></ul>
+    <div id="ready-btn" style="display: none;">准备</div>
+    <div id="lottery" style="display: none;">
+        <div id="turntable">
+            1
+        </div>
+        <div id="lottery-btn" style="display: none;">抽奖</div>
+    </div>
+    <script>
+        // 从URL路径解析用户名 
+        const pathSegments = window.location.pathname.split('/'); 
+        console.log(pathSegments);
+        const mainIndex = pathSegments.indexOf('main'); 
+        const username = decodeURIComponent(pathSegments[mainIndex + 1]);
+ 
+        // 建立WebSocket连接 
+        const socket = new WebSocket(`ws://${window.location.host}/?username=${encodeURIComponent(username)}`); 
+
+        // 主办方 admin
+        if (username === 'admin') {
+            document.getElementById('ready-btn').style.display = 'block';
+            document.getElementById('lottery').style.display = 'block';
+            document.getElementById('lottery-btn').style.display = 'block';
+        }
+
+        document.getElementById('ready-btn').onclick = function() {
+            console.log('准备');
+            socket.send(JSON.stringify({ type: 'ready' }));
+        };
+
+        // 更新用户列表 
+        socket.onmessage  = function(event) {
+            const data = JSON.parse(event.data); 
+            if (data.type  === 'userlist') {
+                const userList = document.getElementById('userList'); 
+                userList.innerHTML  = data.users.map(user  => 
+                    `<li>${user}</li>`
+                ).join('');
+            }
+            if (data.type === 'message' && username !== 'admin') {
+                console.log('抽奖即将开始');
+                document.getElementById('lottery').style.display = 'block';
+            }
+        };
+ 
+        // 处理连接关闭 
+        socket.onclose  = () => console.log(' 连接已关闭');
+        socket.onerror  = (err) => console.error(' 连接错误:', err);
+    </script>
+</body>
+</html>

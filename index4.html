@@ -1,0 +1,77 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+ 
+<head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Rotating and Stationary Squares</title> 
+  <style> 
+    canvas { 
+      border: 1px solid black; 
+    } 
+  </style> 
+</head> 
+ 
+<body> 
+  <canvas id="myCanvas" width="400" height="400"></canvas> 
+  <script> 
+    // 获取 canvas 元素和绘图上下文 
+    const canvas = document.getElementById('myCanvas');  
+    const ctx = canvas.getContext('2d');  
+ 
+    // 定义静止正方形 
+    const stationarySquare = { 
+      x: 50, 
+      y: 50, 
+      sideLength: 100, 
+      color: 'blue' 
+    }; 
+ 
+    // 定义转动正方形 
+    const rotatingSquare = { 
+      x: 250, 
+      y: 250, 
+      sideLength: 100, 
+      color: 'red', 
+      rotation: 0 
+    }; 
+ 
+    // 绘制函数 
+    function draw() { 
+      // 清除画布 
+      ctx.clearRect(0,  0, canvas.width,  canvas.height);  
+ 
+      // 绘制静止正方形 
+      ctx.fillStyle  = stationarySquare.color;  
+      ctx.fillRect(stationarySquare.x,  stationarySquare.y, stationarySquare.sideLength,  stationarySquare.sideLength);  
+ 
+      // 保存当前画布状态 
+      ctx.save();  
+ 
+      // 将画布原点移动到转动正方形的中心 
+      ctx.translate(rotatingSquare.x  + rotatingSquare.sideLength  / 2, rotatingSquare.y + rotatingSquare.sideLength  / 2); 
+      // 旋转画布 
+      ctx.rotate(rotatingSquare.rotation);  
+      // 将画布原点移回到原来的位置 
+      ctx.translate(-(rotatingSquare.x  + rotatingSquare.sideLength  / 2), -(rotatingSquare.y + rotatingSquare.sideLength  / 2)); 
+ 
+      // 绘制转动正方形 
+      ctx.fillStyle  = rotatingSquare.color;  
+      ctx.fillRect(rotatingSquare.x,  rotatingSquare.y, rotatingSquare.sideLength,  rotatingSquare.sideLength);  
+ 
+      // 恢复画布状态 
+      ctx.restore();  
+ 
+      // 更新转动正方形的旋转角度 
+      rotatingSquare.rotation  += 0.01; 
+ 
+      // 循环调用 draw 函数，实现动画效果 
+      requestAnimationFrame(draw); 
+    } 
+ 
+    // 开始绘制 
+    draw(); 
+  </script> 
+</body> 
+ 
+</html> 

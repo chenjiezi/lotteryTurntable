@@ -1,0 +1,120 @@
+<canvas id="wheel" width="500" height="500"></canvas>
+ 
+<script>
+const canvas = document.getElementById('wheel'); 
+const ctx = canvas.getContext('2d'); 
+const centerX = canvas.width  / 2;
+const centerY = canvas.height  / 2;
+const prizes = ["奖品1", "奖品2", "奖品3", "奖品4", "奖品5", "奖品6", "奖品7", "奖品8"];
+const prizeAngle = 360 / prizes.length; 
+let rotation = 0;
+let isSpinning = false;
+ 
+// 绘制转盘 
+function drawWheel() {
+  ctx.clearRect(0,  0, canvas.width,  canvas.height); 
+  
+  // 绘制转盘背景 
+  ctx.save(); 
+  ctx.translate(centerX,  centerY);
+  ctx.rotate((rotation  * Math.PI) / 180);
+  
+  prizes.forEach((text,  index) => {
+    ctx.beginPath(); 
+    ctx.fillStyle  = `hsl(${(index * 45)}, 70%, 60%)`;
+    ctx.moveTo(0,  0);
+    ctx.arc(0,  0, 200, 
+      index * prizeAngle * Math.PI/180, 
+      (index + 1) * prizeAngle * Math.PI/180 
+    );
+    ctx.fill(); 
+    
+    // 绘制文字 
+    ctx.save(); 
+    ctx.rotate((index  * prizeAngle + prizeAngle/2) * Math.PI/180);
+    ctx.fillStyle  = "white";
+    ctx.font  = "16px Arial";
+    ctx.textAlign  = "right";
+    ctx.fillText(text,  180, 10);
+    ctx.restore(); 
+  });
+  
+  ctx.restore(); 
+}
+ 
+// 绘制固定按钮和箭头 
+function drawButton() {
+  // 按钮背景 
+  ctx.beginPath(); 
+  ctx.arc(centerX,  centerY, 50, 0, Math.PI * 2);
+  ctx.fillStyle  = "#FF4444";
+  ctx.fill(); 
+ 
+  // 固定箭头 
+  ctx.beginPath(); 
+  ctx.moveTo(centerX  - 15, centerY - 30);
+  ctx.lineTo(centerX,  centerY - 60);
+  ctx.lineTo(centerX  + 15, centerY - 30);
+  ctx.fillStyle  = "white";
+  ctx.fill(); 
+ 
+  // 按钮文字 
+  ctx.fillStyle  = "white";
+  ctx.font  = "20px Arial";
+  ctx.textAlign  = "center";
+  ctx.fillText(" 开始抽奖", centerX, centerY + 8);
+}
+ 
+// 动画函数 
+function animate(targetAngle) {
+  const duration = 3000; // 3秒 
+  const startTime = Date.now(); 
+  const startRotation = rotation;
+ 
+  function update() {
+    const elapsed = Date.now()  - startTime;
+    const progress = Math.min(elapsed  / duration, 1);
+    
+    // 缓动函数（二次缓出）
+    const ease = 1 - Math.pow(1  - progress, 3);
+    
+    rotation = startRotation + (targetAngle - startRotation) * ease + 20;
+    
+    drawWheel();
+    drawButton();
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      // 计算最终结果 
+      const finalAngle = ((rotation % 360) + 360) % 360;
+      const resultIndex = Math.floor(finalAngle  / prizeAngle);
+      alert(`中奖结果：${prizes[resultIndex]}`);
+      isSpinning = false;
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
+ 
+// 点击事件 
+canvas.addEventListener('click',  (e) => {
+  if (isSpinning) return;
+  
+  const rect = canvas.getBoundingClientRect(); 
+  const x = e.clientX  - rect.left; 
+  const y = e.clientY  - rect.top; 
+  const dist = Math.hypot(x  - centerX, y - centerY);
+  
+  if (dist < 50) { // 点击按钮范围 
+    isSpinning = true;
+    const targetIndex = Math.floor(Math.random()  * prizes.length); 
+    const targetRotation = targetIndex * prizeAngle + 360 * 5;
+    animate(targetRotation);
+  }
+});
+ 
+// 初始绘制 
+drawWheel();
+drawButton();
+</script>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #wheel { position: relative; width: 300px; height: 300px; }
+    #pointer {
+      position: absolute;
+      left: 145px; top: 10px;
+      width: 10px; height: 140px;
+      background: red;
+      transform-origin: 50% 100%;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div id="wheel">
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <div id="pointer"></div>
+  </div>
+  <button onclick="startSpin()">旋转</button>
+ 
+<script>
+const prizes = ["一等奖", "二等奖", "三等奖", "四等奖", "五等奖"];
+const prizeCount = prizes.length; 
+const prizeAngle = 360 / prizeCount;
+let currentRotation = 0;
+ 
+// 初始化转盘 
+function initWheel() {
+  const canvas = document.getElementById('canvas'); 
+  const ctx = canvas.getContext('2d'); 
+  
+  // 绘制扇形 
+  prizes.forEach((prize,  i) => {
+    ctx.beginPath(); 
+    ctx.fillStyle  = `hsl(${i * 60}, 70%, 70%)`;
+    ctx.arc(150,  150, 150, 
+      degToRad(i * prizeAngle - prizeAngle/2),
+      degToRad((i + 1) * prizeAngle - prizeAngle/2)
+    );
+    ctx.lineTo(150,  150);
+    ctx.fill(); 
+  });
+}
+ 
+// 核心旋转逻辑 
+function startSpin() {
+  const pointer = document.getElementById('pointer'); 
+  const targetRotation = currentRotation + 1440 + Math.random()  * 360;
+  
+  pointer.style.transition  = 'none';
+  pointer.style.transform  = `rotate(${currentRotation % 360}deg)`;
+  
+  setTimeout(() => {
+    pointer.style.transition  = 'transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    pointer.style.transform  = `rotate(${targetRotation}deg)`;
+    
+    // 计算最终位置 
+    setTimeout(() => {
+      const finalRotation = targetRotation % 360;
+      const adjustedAngle = (360 - finalRotation % 360) % 360;
+      
+      // 关键算法：寻找中间对齐的扇形 
+      const selectedIndex = Math.round(adjustedAngle  / prizeAngle) % prizeCount;
+      alert("中奖结果：" + prizes[selectedIndex]);
+      
+      currentRotation = targetRotation;
+    }, 5050);
+  }, 50);
+}
+ 
+// 工具函数 
+function degToRad(deg) {
+  return deg * Math.PI / 180;
+}
+ 
+// 初始化 
+initWheel();
+</script>
+</body>
+</html>

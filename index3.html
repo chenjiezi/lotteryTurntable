@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="" />
+    <meta name="author" content="marendu" />
+    <title>转盘抽奖效果</title>
+    <!-- 这里是css部分 -->
+    <style>
+      #bg {
+        width: 650px;
+        height: 600px;
+        margin: 0 auto;
+        background: url(./assets/turntable-bg.jpg) no-repeat;
+        position: relative;
+      }
+
+      img[src^="./assets/pointer.png"] {
+        position: absolute;
+        z-index: 10;
+        top: 155px;
+        left: 247px;
+      }
+
+      .b {
+        position: absolute;
+        z-index: 5;
+        top: 60px;
+        left: 116px;
+        transition: all 4s;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 这里是HTML结构部分 -->
+    <div id="bg">
+      <img class="a" src="./assets/pointer.png" alt="pointer" /><img
+        class="b"
+        src="./assets/turntable.png"
+        alt="turntable"
+      />
+    </div>
+    <button onclick="btn()">概率统计</button>
+    <button onclick="test()">测试100次抽奖</button>
+    <!-- 这里是js部分 -->
+    <script>
+      var oPointer = document.getElementsByTagName("img")[0];
+      var oTurntable = document.getElementsByTagName("img")[1];
+      var cat = 51.4; //总共7个扇形区域，每个区域约51.4度
+      var offOn = true; //是否正在抽奖
+      var transformRotate = 0; //转圈度数
+      var randmArr = [1, 5, 10, 20, 35, 55, 100]; //概率计算为randmArr[i-1]和randmArr[i]之间
+      // 打印概率
+      function btn() {
+        console.log(form);
+        console.log(obj);
+        let num = 0;
+        Object.keys(obj).map((item) => {
+          num += obj[item];
+        });
+        console.log(num);
+      }
+      oPointer.onclick = function () {
+        if (offOn) {
+          offOn = !offOn;
+          ratating();
+        }
+      };
+      let n = 0;
+      var testTime = null;
+      function test() {
+        testTime = setInterval(() => {
+          n++;
+          if (n > 99) {
+            clearInterval(testTime);
+          }
+          ratating();
+        }, 300);
+      }
+      //旋转
+      //TODO: 规定中奖区间，通过区间判定值
+      var prevrdm = 0; //缓存上一次的旋转度
+      var obj = {}; //产生的随机数的次数
+      var form = {}; //统计中奖的概率
+      var timer = null;
+      function ratating() {
+        var timer = null;
+        const rdm = parseInt(Math.random() * (100 - 1) + 1); //随机的数
+        var num = 7;
+        var nextrdm = 0; //本次旋转度
+        console.log("rdm=" + rdm);
+        // 统计随机数次数
+        if (!obj[rdm]) {
+          obj[rdm] = 1;
+        } else {
+          obj[rdm]++;
+        }
+        for (var i = 0; i < randmArr.length; i++) {
+          if (i === 0) {
+            if (rdm >= 0 && rdm <= randmArr[0]) {
+              num = i + 1;
+              break;
+            }
+          } else {
+            if (rdm > randmArr[i - 1] && rdm <= randmArr[i]) {
+              num = i + 1;
+              break;
+            }
+          }
+        }
+        console.log("num=" + num);
+        clearTimeout(timer);
+        timer = null;
+        timer = setTimeout(function () {
+          nextrdm = Math.floor(num * cat - 25); //定义本次抽奖结果
+        //   nextrdm = Math.floor(num * cat - 24); //定义本次抽奖结果
+          var biginRotate = 2 * 360 + (360 - prevrdm); //定义默认的旋转圈数，同时补全使轮盘置零，
+          prevrdm = nextrdm;
+
+          transformRotate = nextrdm + biginRotate + transformRotate; //本次旋转的度
+          // 测试中奖的概率时，把下面注释掉，同时将timeout时间设置为0
+          oTurntable.style.transform = "rotate(" + transformRotate + "deg)";
+          setTimeout(function () {
+            offOn = !offOn;
+            // 统计中奖概率
+            if (!form["a" + num]) {
+              form["a" + num] = 1;
+            } else {
+              form["a" + num]++;
+            }
+            console.log("transformRotate=" + transformRotate);
+            if (nextrdm <= cat * 1) {
+              console.warn("一等奖");
+              console.log(
+                "nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "4999元"
+              );
+            } else if (nextrdm <= cat * 2) {
+              console.warn("二等奖");
+              console.log("nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "50元");
+            } else if (nextrdm <= cat * 3) {
+              console.warn("三等奖");
+              console.log("nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "10元");
+            } else if (nextrdm <= cat * 4) {
+              console.warn("四等奖");
+              console.log("nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "5元");
+            } else if (nextrdm <= cat * 5) {
+              console.warn("五等奖");
+              console.log(
+                "nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "免息服务"
+              );
+            } else if (nextrdm <= cat * 6) {
+              console.warn("六等奖");
+              console.log(
+                "nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "提交白金"
+              );
+            } else if (nextrdm <= cat * 7) {
+              console.warn("七等奖");
+              console.log(
+                "nextrdm=" + nextrdm + "rdm=" + rdm + "，" + "未中奖"
+              );
+            }
+          }, 0);
+        }, 30);
+      }
+    </script>
+  </body>
+</html>

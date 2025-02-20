@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        canvas {
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="wheel" width="500" height="500"></canvas>
+ 
+    <script>
+        const canvas = document.getElementById('wheel'); 
+        const ctx = canvas.getContext('2d'); 
+        let isSpinning = false;
+        let rotation = 0;
+        let spinSpeed = 0;
+        let isButtonDisabled = false;
+ 
+        // 轮盘配置 
+        const config = {
+            radius: 200,
+            center: { x: 250, y: 250 },
+            sections: [
+                { color: '#FF6B6B', text: '一等奖' },
+                { color: '#4ECDC4', text: '二等奖' },
+                { color: '#45B7D1', text: '三等奖' },
+                { color: '#96CEB4', text: '谢谢参与' },
+                { color: '#FFEEAD', text: '幸运奖' },
+                { color: '#D4A5A5', text: '纪念奖' }
+            ],
+            button: {
+                radius: 60,
+                color: '#ff4444',
+                text: '开始抽奖'
+            }
+        };
+ 
+        // 绘制按钮 
+        function drawButton() {
+            ctx.save(); 
+            ctx.beginPath(); 
+            ctx.arc(config.center.x,  config.center.y,  config.button.radius,  0, Math.PI * 2);
+            ctx.fillStyle  = isButtonDisabled ? '#cccccc' : config.button.color; 
+            ctx.fill(); 
+            
+            // 按钮文字 
+            ctx.font  = '20px Arial';
+            ctx.fillStyle  = 'white';
+            ctx.textAlign  = 'center';
+            ctx.textBaseline  = 'middle';
+            ctx.fillText(config.button.text,  config.center.x,  config.center.y); 
+            ctx.restore(); 
+
+        }
+ 
+        // 绘制轮盘 
+        function drawWheel() {
+            ctx.clearRect(0,  0, canvas.width,  canvas.height); 
+            
+            // 绘制扇形分区 
+            const sectionAngle = (Math.PI * 2) / config.sections.length; 
+            config.sections.forEach((section,  index) => {
+                ctx.save(); 
+                ctx.translate(config.center.x,  config.center.y); 
+                ctx.rotate(rotation  + index * sectionAngle);
+                
+                // 绘制扇形 
+                ctx.beginPath(); 
+                ctx.moveTo(0,  0);
+                ctx.arc(0,  0, config.radius,  0, sectionAngle);
+                ctx.fillStyle  = section.color; 
+                ctx.fill(); 
+                
+                // 绘制文字 
+                ctx.rotate(sectionAngle  / 2);
+                ctx.fillStyle  = '#333';
+                ctx.font  = '18px Arial';
+                ctx.fillText(section.text,  config.radius  / 2, 10);
+                ctx.restore(); 
+            });
+ 
+            // 始终在最上层绘制按钮 
+            drawButton();
+        }
+ 
+        // 旋转动画 
+        function animate() {
+            if (!isSpinning) return;
+ 
+            rotation += spinSpeed;
+            spinSpeed *= 0.99; // 减速效果 
+ 
+            // 停止条件 
+            if (spinSpeed < 0.001) {
+                isSpinning = false;
+                isButtonDisabled = false;
+            }
+ 
+            drawWheel();
+            requestAnimationFrame(animate);
+        }
+ 
+        // 点击事件处理 
+        canvas.addEventListener('click',  (e) => {
+            if (isButtonDisabled) return;
+ 
+            // 计算点击位置 
+            const rect = canvas.getBoundingClientRect(); 
+            const x = e.clientX  - rect.left; 
+            const y = e.clientY  - rect.top; 
+            
+            // 检测按钮点击 
+            const dx = x - config.center.x; 
+            const dy = y - config.center.y; 
+            if (dx*dx + dy*dy <= config.button.radius*config.button.radius)  {
+                startSpin();
+            }
+        });
+ 
+        function startSpin() {
+            if (!isSpinning) {
+                isSpinning = true;
+                isButtonDisabled = true;
+                spinSpeed = Math.random()  * 0.1 + 0.05; // 初始速度 
+                animate();
+            }
+        }
+ 
+        // 初始绘制 
+        drawWheel();
+    </script>
+</body>
+</html>

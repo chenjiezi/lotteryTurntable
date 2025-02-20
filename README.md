@@ -1,3 +1,5 @@
+# lotteryTurntable
+
 - NOTE
   - canvas
     - ctx.save()和ctx.restore()，在绘制图形过程中，平移、旋转、绘制文本，会影响之前画布的内容；所以在平移、旋转、绘制文本之前save，在平移、旋转、绘制文本之后restore。保证画布之前的内容不受到影响。+

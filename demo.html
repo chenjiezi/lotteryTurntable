@@ -1,4 +1,17 @@
-<canvas id="wheel" width="500" height="500"></canvas>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      background-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="wheel" width="500" height="500"></canvas>
  
 <script>
 const canvas = document.getElementById('wheel'); 
@@ -8,7 +21,9 @@ const centerY = canvas.height  / 2;
 const prizes = ["奖品1", "奖品2", "奖品3", "奖品4", "奖品5", "奖品6", "奖品7", "奖品8"];
 const prizeAngle = 360 / prizes.length; 
 let rotation = 0;
+let preRandomDigit = 0
 let isSpinning = false;
+let isFirst = true
  
 // 绘制转盘 
 function drawWheel() {
@@ -17,7 +32,7 @@ function drawWheel() {
   // 绘制转盘背景 
   ctx.save(); 
   ctx.translate(centerX,  centerY);
-  ctx.rotate((rotation  * Math.PI) / 180);
+  ctx.rotate((rotation  * Math.PI) / 180 - Math.PI/2);
   
   prizes.forEach((text,  index) => {
     ctx.beginPath(); 
@@ -66,7 +81,7 @@ function drawButton() {
 }
  
 // 动画函数 
-function animate(targetAngle) {
+function animate(targetAngle, randomDigit) {
   const duration = 3000; // 3秒 
   const startTime = Date.now(); 
   const startRotation = rotation;
@@ -75,28 +90,38 @@ function animate(targetAngle) {
     const elapsed = Date.now()  - startTime;
     const progress = Math.min(elapsed  / duration, 1);
     
-    // 缓动函数（二次缓出）
-    const ease = 1 - Math.pow(1  - progress, 3);
+    // 缓动函数（三次缓出）速率由快到慢（比二次缓出更明显）
+    // const ease = 1 - Math.pow(1  - progress, 3);
+    // 缓动函数（二次缓出）速率由快到慢
+    // const ease = 1 - Math.pow(1  - progress, 2);
+    // 缓动函数（线性）速率匀速
+    // const ease = progress;
+    // 缓动函数（正弦）速率由慢到快
+    // const ease = Math.sin(progress*Math.PI/2);
+    // 缓动函数（指数）速率由慢到快
+    // const ease = Math.pow(progress, 3)
+    // 连续的三次缓入缓出函数（无分段）速率由慢到快，再到慢
+    const ease = progress < 0.5 
+        ? 4 * Math.pow(progress, 3) // 前半段缓入
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2; // 后半段缓出
     
-    rotation = startRotation + (targetAngle - startRotation) * ease + 20;
-    
+    rotation = startRotation + targetAngle * ease;
+
     drawWheel();
     drawButton();
     
     if (progress < 1) {
       requestAnimationFrame(update);
     } else {
-      // 计算最终结果 
-      const finalAngle = ((rotation % 360) + 360) % 360;
-      const resultIndex = Math.floor(finalAngle  / prizeAngle);
-      alert(`中奖结果：${prizes[resultIndex]}`);
+      alert(`中奖结果：${prizes[randomDigit - 1]}`);
+      console.log(`中奖结果：${prizes[randomDigit - 1]}, 旋转角度：${rotation}`);
       isSpinning = false;
     }
   }
   
   requestAnimationFrame(update);
 }
- 
+
 // 点击事件 
 canvas.addEventListener('click',  (e) => {
   if (isSpinning) return;
@@ -108,9 +133,21 @@ canvas.addEventListener('click',  (e) => {
   
   if (dist < 50) { // 点击按钮范围 
     isSpinning = true;
-    const targetIndex = Math.floor(Math.random()  * prizes.length); 
-    const targetRotation = targetIndex * prizeAngle + 360 * 5;
-    animate(targetRotation);
+    // 随机生成一个数字作为中奖结果
+    const randomDigit = Math.floor(Math.random()  * prizes.length) + 1; 
+    // 计算旋转角度（确保箭头指向中奖项的中间）
+    const thetaHalf = Math.floor(prizeAngle / 2)
+
+    let targetRotation = 0
+    if (isFirst) {
+      targetRotation = (360 - randomDigit * prizeAngle) + (360 * 5) + thetaHalf;
+      isFirst = false
+    } else {
+      // 补全上次的角度，确保每次都是从0开始旋转 (preRandomDigit * prizeAngle) 
+      targetRotation = (360 - randomDigit * prizeAngle) + 360 * 4 + (preRandomDigit * prizeAngle);
+    }
+    preRandomDigit = randomDigit
+    animate(targetRotation, randomDigit);
   }
 });
  
@@ -118,3 +155,5 @@ canvas.addEventListener('click',  (e) => {
 drawWheel();
 drawButton();
 </script>
+</body>
+</html>

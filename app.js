@@ -40,13 +40,13 @@ wss.on("connection", (socket, req) => {
   socket.on("message", (message) => {
     const data = JSON.parse(message);
     const { type, content } = data;
-    if (type === "ready") {
+    if (type === "message") {
       users.forEach((username, client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
               type: "message",
-              data: "ready",
+              content: content,
             })
           );
         }

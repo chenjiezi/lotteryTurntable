@@ -1,58 +1,221 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>实时用户列表</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>当前在线用户：</h1>
     <ul id="userList"></ul>
-    <div id="ready-btn" style="display: none;">准备</div>
-    <div id="lottery" style="display: none;">
-        <div id="turntable">
-            1
-        </div>
-        <div id="lottery-btn" style="display: none;">抽奖</div>
+    <div id="lottery">
+      <canvas id="wheel" width="500" height="500"></canvas>
     </div>
     <script>
-        // 从URL路径解析用户名 
-        const pathSegments = window.location.pathname.split('/'); 
-        console.log(pathSegments);
-        const mainIndex = pathSegments.indexOf('main'); 
-        const username = decodeURIComponent(pathSegments[mainIndex + 1]);
- 
-        // 建立WebSocket连接 
-        const socket = new WebSocket(`ws://${window.location.host}/?username=${encodeURIComponent(username)}`); 
+      const canvas = document.getElementById("wheel");
+      const ctx = canvas.getContext("2d");
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const prizes = [
+        "奖品1",
+        "奖品2",
+        "奖品3",
+        "奖品4",
+        "奖品5",
+        "奖品6",
+        "奖品7",
+        "奖品8",
+      ];
+      const prizeAngle = 360 / prizes.length;
+      let rotation = 0;
+      let preRandomDigit = 0;
+      let isSpinning = false;
+      let isFirst = true;
 
-        // 主办方 admin
-        if (username === 'admin') {
-            document.getElementById('ready-btn').style.display = 'block';
-            document.getElementById('lottery').style.display = 'block';
-            document.getElementById('lottery-btn').style.display = 'block';
+      // 从URL路径解析用户名
+      const pathSegments = window.location.pathname.split("/");
+      console.log(pathSegments);
+      const mainIndex = pathSegments.indexOf("main");
+      const username = decodeURIComponent(pathSegments[mainIndex + 1]);
+
+      // 建立WebSocket连接
+      const socket = new WebSocket(
+        `ws://${window.location.host}/?username=${encodeURIComponent(username)}`
+      );
+
+      // 更新用户列表
+      socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        if (data.type === "userlist") {
+          const userList = document.getElementById("userList");
+          userList.innerHTML = data.users
+            .map((user) => `<li>${user}</li>`)
+            .join("");
+        }
+        if (data.type === "message" && username !== "admin") {
+          console.log("抽奖即将开始", data.content);
+          const {targetRotation, randomDigit} = data.content;
+          animate(targetRotation, randomDigit);
+        }
+      };
+
+      // 处理连接关闭
+      socket.onclose = () => console.log(" 连接已关闭");
+      socket.onerror = (err) => console.error(" 连接错误:", err);
+
+      // 绘制转盘
+      function drawWheel() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 绘制转盘背景
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate((rotation * Math.PI) / 180 - Math.PI / 2);
+
+        prizes.forEach((text, index) => {
+          ctx.beginPath();
+          ctx.fillStyle = `hsl(${index * 45}, 70%, 60%)`;
+          ctx.moveTo(0, 0);
+          ctx.arc(
+            0,
+            0,
+            200,
+            (index * prizeAngle * Math.PI) / 180,
+            ((index + 1) * prizeAngle * Math.PI) / 180
+          );
+          ctx.fill();
+
+          // 绘制文字
+          ctx.save();
+          ctx.rotate(((index * prizeAngle + prizeAngle / 2) * Math.PI) / 180);
+          ctx.fillStyle = "white";
+          ctx.font = "16px Arial";
+          ctx.textAlign = "right";
+          ctx.fillText(text, 180, 10);
+          ctx.restore();
+        });
+
+        ctx.restore();
+      }
+
+      // 绘制固定按钮和箭头
+      function drawButton() {
+        // 按钮背景
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 50, 0, Math.PI * 2);
+        ctx.fillStyle = "#FF4444";
+        ctx.fill();
+
+        // 固定箭头
+        ctx.beginPath();
+        ctx.moveTo(centerX - 15, centerY - 30);
+        ctx.lineTo(centerX, centerY - 60);
+        ctx.lineTo(centerX + 15, centerY - 30);
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+        // 按钮文字
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(" 开始抽奖", centerX, centerY + 8);
+      }
+
+      // 动画函数
+      function animate(targetAngle, randomDigit) {
+        const duration = 3000; // 3秒
+        const startTime = Date.now();
+        const startRotation = rotation;
+
+        function update() {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          // 缓动函数（三次缓出）速率由快到慢（比二次缓出更明显）
+          // const ease = 1 - Math.pow(1  - progress, 3);
+          // 缓动函数（二次缓出）速率由快到慢
+          // const ease = 1 - Math.pow(1  - progress, 2);
+          // 缓动函数（线性）速率匀速
+          // const ease = progress;
+          // 缓动函数（正弦）速率由慢到快
+          // const ease = Math.sin(progress*Math.PI/2);
+          // 缓动函数（指数）速率由慢到快
+          // const ease = Math.pow(progress, 3)
+          // 连续的三次缓入缓出函数（无分段）速率由慢到快，再到慢
+          const ease =
+            progress < 0.5
+              ? 4 * Math.pow(progress, 3) // 前半段缓入
+              : 1 - Math.pow(-2 * progress + 2, 3) / 2; // 后半段缓出
+
+          rotation = startRotation + targetAngle * ease;
+
+          drawWheel();
+          drawButton();
+
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          } else {
+            alert(`中奖结果：${prizes[randomDigit - 1]}`);
+            console.log(
+              `中奖结果：${prizes[randomDigit - 1]}, 旋转角度：${rotation}`
+            );
+            isSpinning = false;
+          }
         }
 
-        document.getElementById('ready-btn').onclick = function() {
-            console.log('准备');
-            socket.send(JSON.stringify({ type: 'ready' }));
-        };
+        requestAnimationFrame(update);
+      }
 
-        // 更新用户列表 
-        socket.onmessage  = function(event) {
-            const data = JSON.parse(event.data); 
-            if (data.type  === 'userlist') {
-                const userList = document.getElementById('userList'); 
-                userList.innerHTML  = data.users.map(user  => 
-                    `<li>${user}</li>`
-                ).join('');
-            }
-            if (data.type === 'message' && username !== 'admin') {
-                console.log('抽奖即将开始');
-                document.getElementById('lottery').style.display = 'block';
-            }
-        };
- 
-        // 处理连接关闭 
-        socket.onclose  = () => console.log(' 连接已关闭');
-        socket.onerror  = (err) => console.error(' 连接错误:', err);
+      // 开始抽奖
+      function startSpin(e) {
+        if (isSpinning) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const dist = Math.hypot(x - centerX, y - centerY);
+
+        if (dist < 50) {
+          // 点击按钮范围
+          isSpinning = true;
+          // 随机生成一个数字作为中奖结果
+          const randomDigit = Math.floor(Math.random() * prizes.length) + 1;
+          // 计算旋转角度（确保箭头指向中奖项的中间）
+          const thetaHalf = Math.floor(prizeAngle / 2);
+
+          let targetRotation = 0;
+          if (isFirst) {
+            targetRotation =
+              360 - randomDigit * prizeAngle + 360 * 5 + thetaHalf;
+            isFirst = false;
+          } else {
+            // 补全上次的角度，确保每次都是从0开始旋转 (preRandomDigit * prizeAngle)
+            targetRotation =
+              360 -
+              randomDigit * prizeAngle +
+              360 * 4 +
+              preRandomDigit * prizeAngle;
+          }
+          preRandomDigit = randomDigit;
+          animate(targetRotation, randomDigit);
+          return { targetRotation, randomDigit }
+        }
+      }
+      // 点击事件
+      canvas.addEventListener("click", function (e) {
+        if (username === "admin") {
+          console.log("管理员点击抽奖", e);
+          const data = startSpin(e);
+          socket.send(
+            JSON.stringify({
+              type: "message",
+              content: data
+            })
+          );
+        }
+      });
+
+      // 初始绘制
+      drawWheel();
+      drawButton();
     </script>
-</body>
+  </body>
 </html>
